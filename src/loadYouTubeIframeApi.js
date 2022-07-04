@@ -1,12 +1,21 @@
 // @flow
 
-import load from 'load-script';
+import {
+  loadScript,
+} from '@guardian/libs';
 import type {
-  EmitterType,
   IframeApiType,
 } from './types';
 
-export default (emitter: EmitterType): Promise<IframeApiType> => {
+const loadScripts = () => {
+  const scripts = [
+    loadScript('https://www.youtube.com/iframe_api?ima=1'),
+    loadScript('//imasdk.googleapis.com/js/sdkloader/ima3.js'),
+  ];
+  return Promise.all(scripts);
+};
+
+export default (): Promise<IframeApiType> => {
   /**
    * A promise that is resolved when window.onYouTubeIframeAPIReady is called.
    * The promise is resolved with a reference to window.YT object.
@@ -16,27 +25,21 @@ export default (emitter: EmitterType): Promise<IframeApiType> => {
       resolve(window.YT);
 
       return;
-    } else {
-      const protocol = window.location.protocol === 'http:' ? 'http:' : 'https:';
-
-      load(protocol + '//www.youtube.com/iframe_api?ima=1', (error) => {
-        if (error) {
-          emitter.trigger('error', error);
-        }
-      });
     }
 
     const previous = window.onYouTubeIframeAPIReady;
 
-    // The API will call this function when page has finished downloading
-    // the JavaScript for the player API.
-    window.onYouTubeIframeAPIReady = () => {
-      if (previous) {
-        previous();
-      }
+    loadScripts().then(() => {
+      // The API will call this function when page has finished downloading
+      // the JavaScript for the player API.
+      window.onYouTubeIframeAPIReady = () => {
+        if (previous) {
+          previous();
+        }
 
-      resolve(window.YT);
-    };
+        resolve(window.YT);
+      };
+    });
   });
 
   return iframeAPIReady;

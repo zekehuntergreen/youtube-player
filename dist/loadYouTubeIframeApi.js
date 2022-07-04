@@ -4,13 +4,14 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _loadScript = require('load-script');
+var _libs = require('@guardian/libs');
 
-var _loadScript2 = _interopRequireDefault(_loadScript);
+const loadScripts = () => {
+  const scripts = [(0, _libs.loadScript)('https://www.youtube.com/iframe_api?ima=1'), (0, _libs.loadScript)('//imasdk.googleapis.com/js/sdkloader/ima3.js')];
+  return Promise.all(scripts);
+};
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-exports.default = emitter => {
+exports.default = () => {
   /**
    * A promise that is resolved when window.onYouTubeIframeAPIReady is called.
    * The promise is resolved with a reference to window.YT object.
@@ -20,27 +21,21 @@ exports.default = emitter => {
       resolve(window.YT);
 
       return;
-    } else {
-      const protocol = window.location.protocol === 'http:' ? 'http:' : 'https:';
-
-      (0, _loadScript2.default)(protocol + '//www.youtube.com/iframe_api?ima=1', error => {
-        if (error) {
-          emitter.trigger('error', error);
-        }
-      });
     }
 
     const previous = window.onYouTubeIframeAPIReady;
 
-    // The API will call this function when page has finished downloading
-    // the JavaScript for the player API.
-    window.onYouTubeIframeAPIReady = () => {
-      if (previous) {
-        previous();
-      }
+    loadScripts().then(() => {
+      // The API will call this function when page has finished downloading
+      // the JavaScript for the player API.
+      window.onYouTubeIframeAPIReady = () => {
+        if (previous) {
+          previous();
+        }
 
-      resolve(window.YT);
-    };
+        resolve(window.YT);
+      };
+    });
   });
 
   return iframeAPIReady;
